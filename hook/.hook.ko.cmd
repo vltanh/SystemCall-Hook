@@ -1,0 +1,1 @@
+cmd_/home/narubibi/os-project02/hook/hook.ko := ld -r -m elf_x86_64 -T ./scripts/module-common.lds --build-id  -o /home/narubibi/os-project02/hook/hook.ko /home/narubibi/os-project02/hook/hook.o /home/narubibi/os-project02/hook/hook.mod.o
