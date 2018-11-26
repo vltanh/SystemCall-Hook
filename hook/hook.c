@@ -12,6 +12,7 @@
 #include <linux/unistd.h>
 #include <linux/slab.h>
 #include <asm/cacheflush.h>
+#include <linux/fdtable.h>
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("1612838_1612849");
@@ -19,7 +20,7 @@ MODULE_AUTHOR("1612838_1612849");
 void **system_call_table_addr;
 
 asmlinkage int (*original_open) (const char*, int, int);
-asmlinkage int (*original_write) (struct file*, const char*, int);
+asmlinkage int (*original_write) (unsigned int, const char*, int);
 
 asmlinkage int my_open (const char* file, int flags, int mode) {
     char* buf = kmalloc(256, GFP_KERNEL);
@@ -29,12 +30,12 @@ asmlinkage int my_open (const char* file, int flags, int mode) {
     return original_open(file, flags, mode);
 }
 
-asmlinkage int my_write (struct file* filp, const char* file, int count) {
-    char* buf = kmalloc(256, GFP_KERNEL);
-    copy_from_user(buf, file, 256);
-    printk(KERN_INFO "%s wrote %d (bytes) in %s", current->comm, count, filp->f_path.dentry->d_iname);
-    kfree(buf);
-    return original_write(filp, file, count);
+asmlinkage int my_write (unsigned int fd, const char* buf, int count) {
+    char* fileName = kmalloc(256, GFP_KERNEL);
+    char* cwd = d_path(&files_fdtable(current->files)->fd[fd]->f_path, fileName, 256);
+    printk(KERN_INFO "%s wrote %d byte(s) in %s", current->comm, count, cwd);
+    kfree(fileName);
+    return original_write(fd, buf, count);
 }
 
 int make_rw(unsigned long address){
@@ -54,8 +55,6 @@ int make_ro(unsigned long address){
 }
 
 static int __init entry_point(void){
-    printk(KERN_INFO "Captain Hook loaded successfully..\n");
-
     system_call_table_addr = (void*)0xffffffff81801440;
 
     make_rw((unsigned long)system_call_table_addr);
@@ -70,7 +69,6 @@ static int __init entry_point(void){
 }
 
 static int __exit exit_point(void){
-    printk(KERN_INFO "Unloaded Captain Hook successfully\n");
     system_call_table_addr[__NR_open] = original_open;
     system_call_table_addr[__NR_write] = original_write;
     make_ro((unsigned long)system_call_table_addr);

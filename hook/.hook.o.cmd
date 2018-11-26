@@ -893,6 +893,7 @@ deps_/home/narubibi/os-project02/hook/hook.o := \
     $(wildcard include/config/debug/kmemleak.h) \
   include/linux/slub_def.h \
     $(wildcard include/config/slub/stats.h) \
+  include/linux/fdtable.h \
 
 /home/narubibi/os-project02/hook/hook.o: $(deps_/home/narubibi/os-project02/hook/hook.o)
 
